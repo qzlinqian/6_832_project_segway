@@ -57,9 +57,10 @@ def program_formulation(prog, state, torque, seg_world, time_interval, time_step
     # initial state constraints
     for state_item in state[0]:
         prog.AddConstraint(state_item == 0)
-    # terminate state (orientation can be non-zero)
+    # terminate state
     prog.AddConstraint(state[-1][0] == 0)
     prog.AddConstraint(state[-1][1] == 1)
+    prog.AddConstraint(state[-1][2] == np.pi)
     prog.AddConstraint(state[-1][3] == 0)
     prog.AddConstraint(state[-1][4] == 0)
 
@@ -93,8 +94,8 @@ def program_formulation(prog, state, torque, seg_world, time_interval, time_step
             prog.AddConstraint(np.sum(dis ** 2) >= (obs.radius + seg_world.segway.safe_radius) ** 2)
 
     # distance to reference trajectory
-    for t in range(time_steps):
-        prog.AddConstraint(deviation_with_ref, lb=[0], ub=[1], vars=state[t])
+    # for t in range(time_steps):
+        # prog.AddConstraint(deviation_with_ref, lb=[0], ub=[1], vars=state[t])
 
     prog.AddCost(np.sum(torque ** 2) * time_interval)
 
