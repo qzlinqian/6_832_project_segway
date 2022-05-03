@@ -83,6 +83,7 @@ class World(object):
         plt.ylim([-2, 2])
         plt.xlim([-0.1, 10])
         plt.show()
+        return figure, axes
 
     def segway_dynamics(self, state, state_next, torque, time_interval):
         heading = state[2]

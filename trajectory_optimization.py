@@ -2,12 +2,14 @@
 
 # Description:
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from pydrake.all import (SymbolicVectorSystem, DiagramBuilder, LogVectorOutput, Simulator, ConstantVectorSource,
-                         MathematicalProgram, Solve, IpoptSolver, PiecewisePolynomial)
+                         MathematicalProgram, Solve, SnoptSolver, PiecewisePolynomial)
 
 import world
+import visualizer
 
 
 def interpolate_init_guess(control_points, time_steps_list, time_interval):
@@ -34,7 +36,7 @@ def interpolate_init_guess(control_points, time_steps_list, time_interval):
     return state_guess
 
 
-def deviation_with_ref(self, state):
+def deviation_with_ref(state):
     x = state[0]
     y = state[1]
     if x <= 4:
@@ -46,7 +48,13 @@ def deviation_with_ref(self, state):
             dev = np.sqrt(x ** 2 + dev ** 2)
     else:
         dev = np.sqrt((x - 4) ** 2 + (y - 0.5) ** 2) - 0.5
-    return dev * 0.1
+    return dev
+
+
+def deviation_simple(state):
+    x = state[0]
+    y = state[1]
+    return (y - 0.5) ** 2
 
 
 # The state of segway is q = [x, y, heading, vel, angular_vel]
@@ -88,14 +96,15 @@ def program_formulation(prog, state, torque, seg_world, time_interval, time_step
         prog.AddConstraint(state[t][3] <= seg_world.segway.velocity_limit[1])
 
     # obstacle
-    for t in range(time_steps):
-        for obs in seg_world.obstacles:
-            dis = state[t][:2] - obs.position
-            prog.AddConstraint(np.sum(dis ** 2) >= (obs.radius + seg_world.segway.safe_radius) ** 2)
+    # for t in range(time_steps):
+    #     for obs in seg_world.obstacles:
+    #         dis = state[t][:2] - obs.position
+    #         prog.AddConstraint(np.sum(dis ** 2) >= (obs.radius + seg_world.segway.safe_radius) ** 2)
 
     # distance to reference trajectory
-    # for t in range(time_steps):
+    for t in range(time_steps):
         # prog.AddConstraint(deviation_with_ref, lb=[0], ub=[1], vars=state[t])
+        prog.AddCost(deviation_simple(state[t]) * 0.1)
 
     prog.AddCost(np.sum(torque ** 2) * time_interval)
 
@@ -115,7 +124,7 @@ if __name__ == '__main__':
     program_formulation(prog, state, torque, seg_world, time_interval, time_steps)
 
     # solve
-    solver = IpoptSolver()
+    solver = SnoptSolver()
     result = solver.Solve(prog)
 
     assert result.is_success()
@@ -123,3 +132,6 @@ if __name__ == '__main__':
     # solution
     torque_opt = result.GetSolution(torque)
     state_opt = result.GetSolution(state)
+    fig, ax = plt.subplots()
+    visualizer.draw_states(state_opt, ax)
+    plt.show()
