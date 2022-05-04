@@ -29,7 +29,7 @@ class Segway(object):
         self.safe_radius = b * 1.2
 
 
-class StaticRoundObstacle(object):
+class StaticObstacle(object):
 
     def __init__(
             self,
@@ -39,19 +39,98 @@ class StaticRoundObstacle(object):
         self.position = position
         self.radius = radius
 
+    def distance(self, state, safe_radius):
+        return 1
+
+    def visualize(self, ax):
+        return
+
+
+class StaticRoundObstacle(StaticObstacle):
+
+    def __init__(self, position, radius):
+        super().__init__(position, radius)
+
+    def distance(self, state, safe_radius):
+        dis = (state[0] - self.position[0]) ** 2 + (state[1] - self.position[1]) ** 2
+        return dis - (self.radius + safe_radius) ** 2
+
+    def visualize(self, ax):
+        circle = plt.Circle(self.position, radius=self.radius)
+        ax.add_artist(circle)
+
+
+class StaticSquareObstacle(StaticObstacle):
+    def __init__(self, position, radius):
+        super().__init__(position, radius)
+
+    def distance(self, state, safe_radius):
+        dis = np.abs(state[0] - self.position[0]) + np.abs(state[1] - self.position[1])
+        return dis - (self.radius + safe_radius) * 2
+
+    def visualize(self, ax):
+        position = [self.position[0] - self.radius / 2,
+                    self.position[1] - self.radius / 2]
+        square = plt.Rectangle(position, self.radius, self.radius)
+        ax.add_artist(square)
+
 
 class World(object):
 
     def __init__(self, num_obs=5):
-        self.segway = Segway(2, 4, 0.4, 0.1, 0.6, [-1.0, 1.0], [-2.0, 5.0])
+        self.segway = Segway(2, 4, 0.4, 0.1, 0.6, [-10.0, 10.0], [-3.0, 5.0])
         self.ref_line_points = []
         self.control_points = []
         self.obstacles = []
+        self.g = 9.8
+
+        for i in range(num_obs):
+            x = 1 + i
+            y = np.random.uniform(-0.5, 1.5)
+            radius = np.random.randint(5, 10) * 0.05
+            if radius < 0.01:
+                continue
+            self.obstacles.append(StaticRoundObstacle([x, y], radius))
+
+    def visualize(self, figure, axes):
+        if len(self.ref_line_points) > 0:
+            positions = np.asarray(self.ref_line_points)
+            plt.plot(positions[:, 0], positions[:, 1], c='c')
+        if len(self.control_points) > 0:
+            ctrl_pnts = np.asarray(self.control_points)
+            plt.plot(ctrl_pnts[:, 0], ctrl_pnts[:, 1], c='r', marker='o')
+        axes.set_aspect(1)
+        for obs in self.obstacles:
+            obs.visualize(axes)
+        plt.ylim([-2, 2])
+        plt.xlim([-0.1, 10])
+
+    def segway_dynamics(self, state, state_next, torque, time_interval):
+        heading = state[2]
+        vel = state[3]
+        delta_state = [vel * np.cos(heading) * time_interval,
+                       vel * np.sin(heading) * time_interval,
+                       state[4] * time_interval,
+                       (torque[0] + torque[1]) / 2 * self.segway.r * time_interval,
+                       (torque[1] - torque[0]) * self.segway.r / 2 / self.segway.b * time_interval,
+                       state[6] * time_interval,
+                       ((torque[0] + torque[1]) / 2 * self.segway.r * np.cos(state[5])
+                        + self.g * np.sin(state[5])) * time_interval]
+
+        residuals = state_next - state - delta_state
+
+        return residuals
+
+
+class TurningWorld(World):
+
+    def __init__(self, obs_num=5):
+        super().__init__(obs_num)
 
         # add control points for reference trajectory
         for i in range(5):
             self.control_points.append([i, 0, 0])
-        self.control_points.append([4.5, 0.5, np.pi/2])
+        self.control_points.append([4.5, 0.5, np.pi / 2])
         for i in range(5):
             self.control_points.append([(4 - i), 1, np.pi])
 
@@ -62,43 +141,24 @@ class World(object):
         for i in range(101):
             self.ref_line_points.append([4 - i / 25, 1])
 
-        for i in range(num_obs):
-            x = 1 + i
-            y = np.random.uniform(-1, 2)
-            radius = np.random.randint(5, 10) * 0.05
-            if radius < 0.01:
-                continue
-            self.obstacles.append(StaticRoundObstacle([x, y], radius))
 
-    def visualize(self):
-        figure, axes = plt.subplots()
-        positions = np.asarray(self.ref_line_points)
-        plt.plot(positions[:, 0], positions[:, 1], c='c')
-        ctrl_pnts = np.asarray(self.control_points)
-        plt.plot(ctrl_pnts[:, 0], ctrl_pnts[:, 1], c='r', marker='o')
-        for obs in self.obstacles:
-            circle = plt.Circle(obs.position, radius=obs.radius)
-            axes.set_aspect(1)
-            axes.add_artist(circle)
-        plt.ylim([-2, 2])
-        plt.xlim([-0.1, 10])
-        plt.show()
-        return figure, axes
+class ForwardWorld(World):
 
-    def segway_dynamics(self, state, state_next, torque, time_interval):
-        heading = state[2]
-        vel = state[3]
-        state_dot = [vel * np.cos(heading) * time_interval,
-                     vel * np.sin(heading) * time_interval,
-                     state[4] * time_interval,
-                     (torque[0] + torque[1]) / 2 * self.segway.r * time_interval,
-                     (torque[1] - torque[0]) * self.segway.r / 2 / self.segway.b * time_interval]
+    def __init__(self, obs_num=0):
+        super().__init__(obs_num)
 
-        residuals = state_next - state - state_dot
+        self.control_points.append([0., 0., 0.])
+        self.control_points.append([6., -2., 0.])
+        self.control_points.append([10., 2., 0.])
 
-        return residuals
+        self.obstacles.append(StaticRoundObstacle([1, -2], 1))
+        self.obstacles.append(StaticRoundObstacle([2, 1], 1))
+        self.obstacles.append(StaticRoundObstacle([5, 0.5], 1.5))
+        self.obstacles.append(StaticRoundObstacle([9.5, -0.5], 1.5))
 
 
 if __name__ == '__main__':
-    world = World(4)
-    world.visualize()
+    world = ForwardWorld(4)
+    fig, ax = plt.subplots()
+    world.visualize(fig, ax)
+    plt.show()

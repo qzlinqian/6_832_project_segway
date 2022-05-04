@@ -19,7 +19,7 @@ def interpolate_init_guess(control_points, time_steps_list, time_interval):
     for i in range(len(time_steps_list) - 1):
         time_limits = [time_steps_list[i] * time_interval, time_steps_list[i + 1] * time_interval]
         position_limits = np.column_stack((control_points[i], control_points[i + 1]))
-        state_limits = np.vstack((position_limits, np.zeros([2, 2])))
+        state_limits = np.vstack((position_limits, np.zeros([4, 2])))
 
         state = PiecewisePolynomial.FirstOrderHold(time_limits, state_limits)
 
@@ -54,23 +54,35 @@ def deviation_with_ref(state):
 def deviation_simple(state):
     x = state[0]
     y = state[1]
-    return (y - 0.5) ** 2
+    return (x - 4) ** 2 + (y - 0.5) ** 2
 
 
-# The state of segway is q = [x, y, heading, vel, angular_vel]
+# The state of segway is q = [x, y, heading, vel, angular_vel, alpha, alpha_dot]
 # torque is actually angular acceleration of two wheels. Just don't want to add more segway variables
 def program_formulation(prog, state, torque, seg_world, time_interval, time_steps):
     # prog = MathematicalProgram()
 
     # initial state constraints
-    for state_item in state[0]:
-        prog.AddConstraint(state_item == 0)
+    prog.AddConstraint(state[0][0] == 0)
+    prog.AddConstraint(state[0][1] == 0)
+    prog.AddConstraint(state[0][2] == 0)
+    prog.AddConstraint(state[0][3] == 0)
+    prog.AddConstraint(state[0][4] == 0)
+    prog.AddConstraint(state[0][5] == 0)
+    prog.AddConstraint(state[0][6] == 0)
     # terminate state
-    prog.AddConstraint(state[-1][0] == 0)
-    prog.AddConstraint(state[-1][1] == 1)
-    prog.AddConstraint(state[-1][2] == np.pi)
+    prog.AddConstraint(state[-1][0] == 10)
+    prog.AddConstraint(state[-1][1] == 2)
+    # prog.AddConstraint(state[-1][2] == 0)
     prog.AddConstraint(state[-1][3] == 0)
     prog.AddConstraint(state[-1][4] == 0)
+    prog.AddConstraint(state[-1][5] == 0)
+    prog.AddConstraint(state[-1][6] == 0)
+
+    # define lane border
+    for t in range(time_steps):
+        prog.AddConstraint(state[t][1] <= 2)
+        prog.AddConstraint(state[t][1] >= -2)
 
     # discrete dynamics
     for t in range(time_steps):
@@ -96,15 +108,19 @@ def program_formulation(prog, state, torque, seg_world, time_interval, time_step
         prog.AddConstraint(state[t][3] <= seg_world.segway.velocity_limit[1])
 
     # obstacle
-    # for t in range(time_steps):
-    #     for obs in seg_world.obstacles:
-    #         dis = state[t][:2] - obs.position
-    #         prog.AddConstraint(np.sum(dis ** 2) >= (obs.radius + seg_world.segway.safe_radius) ** 2)
+    for t in range(time_steps):
+        for obs in seg_world.obstacles:
+            prog.AddConstraint(obs.distance(state[t], seg_world.segway.safe_radius) >= 0)
+
+    # rod angle (state[5-6])
+    for t in range(time_steps):
+        prog.AddConstraint(state[t][5] <= np.pi / 4)
+        prog.AddConstraint(state[t][5] >= -np.pi / 4)
 
     # distance to reference trajectory
-    for t in range(time_steps):
+    # for t in range(time_steps):
         # prog.AddConstraint(deviation_with_ref, lb=[0], ub=[1], vars=state[t])
-        prog.AddCost(deviation_simple(state[t]) * 0.1)
+        # prog.AddCost(deviation_simple(state[t]))
 
     prog.AddCost(np.sum(torque ** 2) * time_interval)
 
@@ -113,12 +129,14 @@ if __name__ == '__main__':
     # define some variables
     time_steps = 100
     time_interval = 0.1  # sec
-    seg_world = world.World(4)
-    # seg_world.visualize()
+    seg_world = world.ForwardWorld(0)
+    fig, ax = plt.subplots()
+    seg_world.visualize(fig, ax)
+    plt.show()
 
     # optimization variables
     prog = MathematicalProgram()
-    state = prog.NewContinuousVariables(time_steps + 1, 5, 'state')
+    state = prog.NewContinuousVariables(time_steps + 1, 7, 'state')
     torque = prog.NewContinuousVariables(time_steps, 2, 'torque')
     # add constraints and costs
     program_formulation(prog, state, torque, seg_world, time_interval, time_steps)
@@ -132,6 +150,12 @@ if __name__ == '__main__':
     # solution
     torque_opt = result.GetSolution(torque)
     state_opt = result.GetSolution(state)
+
+    # plot
     fig, ax = plt.subplots()
-    visualizer.draw_states(state_opt, ax)
+    seg_world.visualize(fig, ax)
+    visualizer.draw_trajectory(state_opt, ax)
     plt.show()
+
+    t = np.linspace(0, time_steps + 1, time_steps + 1) * time_interval
+    visualizer.draw_states(state_opt, torque_opt, t)
