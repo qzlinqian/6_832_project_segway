@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="urdf">
+  <link
+    name="wheel_base">
+    <inertial>
+      <origin
+        xyz="0 0 6.93889390390723E-18"
+        rpy="0 0 0" />
+      <mass
+        value="0.029845130209103" />
+      <inertia
+        ixx="3.49534907635339E-05"
+        ixy="-2.74320883009007E-22"
+        ixz="-9.21581989712667E-40"
+        iyy="5.08545310799847E-06"
+        iyz="-2.73196242009686E-39"
+        izz="3.49534907635339E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/wheel_base.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/wheel_base.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="rod">
+    <inertial>
+      <origin
+        xyz="-0.0200959985680807 2.77555756156289E-17 0.0511971761091537"
+        rpy="0 0 0" />
+      <mass
+        value="0.00785398163397448" />
+      <inertia
+        ixx="5.72684475393794E-06"
+        ixy="3.00886947816164E-22"
+        ixz="2.20937466722226E-06"
+        iyy="6.59407208019107E-06"
+        iyz="-7.48426125066208E-22"
+        izz="9.65402096677818E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/rod.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/rod.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint"
+    type="continuous">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="wheel_base" />
+    <child
+      link="rod" />
+    <axis
+      xyz="0 -1 0" />
+  </joint>
+</robot>

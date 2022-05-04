@@ -5,6 +5,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+import world
+
 
 def draw_trajectory(states, ax):
     for state in states:
@@ -52,9 +54,5 @@ def draw_states(states, torque, t):
     plt.show()
 
 
-if __name__ == '__main__':
-    state = np.zeros([101, 7])
-    torque = np.zeros([100, 2])
-    t = np.linspace(0, 101, 101)
-
-    draw_states(state, torque, t)
+def publish_to_ros(states):
+    return
