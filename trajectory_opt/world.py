@@ -121,6 +121,19 @@ class World(object):
 
         return residuals
 
+    def save_to_file(self, file):
+        world_info = {}
+        if len(self.ref_line_points) > 0:
+            world_info['ref_points'] = self.ref_line_points
+        if len(self.control_points) > 0:
+            world_info['control_points'] = self.control_points
+        if len(self.obstacles) > 0:
+            obs_list = []
+            for obstacle in self.obstacles:
+                obs_list.append([obstacle.position[0], obstacle.position[1], obstacle.radius])
+            world_info['obstacle'] = obs_list
+        file.write(str(world_info))
+
 
 class TurningWorld(World):
 
