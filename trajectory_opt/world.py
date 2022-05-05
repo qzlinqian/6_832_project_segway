@@ -87,7 +87,7 @@ class World(object):
         for i in range(num_obs):
             x = 1 + i
             y = np.random.uniform(-0.5, 1.5)
-            radius = np.random.randint(5, 10) * 0.05
+            radius = np.random.randint(5, 10) * 0.1
             if radius < 0.01:
                 continue
             self.obstacles.append(StaticRoundObstacle([x, y], radius))
@@ -98,7 +98,7 @@ class World(object):
             plt.plot(positions[:, 0], positions[:, 1], c='c')
         if len(self.control_points) > 0:
             ctrl_pnts = np.asarray(self.control_points)
-            plt.plot(ctrl_pnts[:, 0], ctrl_pnts[:, 1], c='r', marker='o')
+            plt.scatter(ctrl_pnts[:, 0], ctrl_pnts[:, 1], c='r', marker='o')
         axes.set_aspect(1)
         for obs in self.obstacles:
             obs.visualize(axes)
@@ -164,14 +164,53 @@ class ForwardWorld(World):
         self.control_points.append([6., -2., 0.])
         self.control_points.append([10., 2., 0.])
 
-        self.obstacles.append(StaticRoundObstacle([1, -2], 1))
-        self.obstacles.append(StaticRoundObstacle([2, 1], 1))
+        # self.obstacles.append(StaticRoundObstacle([1, -2], 1))
+        # self.obstacles.append(StaticRoundObstacle([2, 1], 1))
         self.obstacles.append(StaticRoundObstacle([5, 0.5], 1.5))
         self.obstacles.append(StaticRoundObstacle([9.5, -0.5], 1.5))
 
 
+class CircleWorld(World):
+
+    def __init__(self, obs_num=0):
+        super().__init__(0)
+
+        self.control_points.append([1., 4., 0.])
+        self.control_points.append([1., 2., 0.])
+        self.control_points.append([2., 1., 0.])
+        self.control_points.append([3., 2., 0.])
+        self.control_points.append([2., 3., 0.])
+        self.control_points.append([0., 3., 0.])
+
+        for i in range(10):
+            self.ref_line_points.append([1., 4 - i/5])
+        for i in range(75):
+            self.ref_line_points.append([2 - np.cos(i * np.pi / 50), 2 - np.sin(i * np.pi / 50)])
+        for i in range(10):
+            self.ref_line_points.append([2 - i/5, 3])
+        self.ref_line_points.append([0., 3.])
+
+        self.obstacles.append(StaticRoundObstacle([2, 2], 0.45))
+        for i in range(obs_num):
+            alpha = np.random.uniform(0, np.pi * 2)
+            x = 2 - np.cos(alpha) * 2
+            y = 2 - np.sin(alpha) * 2
+            radius = np.random.randint(5, 10) * 0.05
+            self.obstacles.append(StaticRoundObstacle([x, y], radius))
+
+    def visualize(self, figure, axes):
+        super().visualize(figure, axes)
+        plt.ylim([0, 4])
+        plt.xlim([-0.1, 4.1])
+
+    def deviation_with_ref(self, state):
+        x = state[0]
+        y = state[1]
+        return (x - 2) ** 2 + (y - 2) ** 2 - 1
+
+
 if __name__ == '__main__':
-    world = ForwardWorld(4)
+    world = CircleWorld(4)
     fig, ax = plt.subplots()
     world.visualize(fig, ax)
     plt.show()
