@@ -3,10 +3,25 @@
      Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
-  name="urdf">
+  name="model">
+  <link
+    name="base_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 -0.1"/>
+      <geometry>
+        <cylinder length="0.1" radius="0.1"/>
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 0 0" />
+      </material>
+    </visual>
+  </link>
+
   <link
     name="wheel_base">
-    <inertial>
+    <!-- <inertial>
       <origin
         xyz="0 0 6.93889390390723E-18"
         rpy="0 0 0" />
@@ -19,14 +34,14 @@
         iyy="5.08545310799847E-06"
         iyz="-2.73196242009686E-39"
         izz="3.49534907635339E-05" />
-    </inertial>
+    </inertial> -->
     <visual>
       <origin
-        xyz="0 0 0"
+        xyz="0.2 0 0"
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdf/meshes/wheel_base.STL" />
+          filename="package://model/meshes/wheel_base.STL" />
       </geometry>
       <material
         name="">
@@ -40,13 +55,13 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdf/meshes/wheel_base.STL" />
+          filename="package://model/meshes/wheel_base.STL" />
       </geometry>
     </collision>
   </link>
   <link
     name="rod">
-    <inertial>
+    <!-- <inertial>
       <origin
         xyz="-0.0200959985680807 2.77555756156289E-17 0.0511971761091537"
         rpy="0 0 0" />
@@ -59,14 +74,14 @@
         iyy="6.59407208019107E-06"
         iyz="-7.48426125066208E-22"
         izz="9.65402096677818E-07" />
-    </inertial>
+    </inertial> -->
     <visual>
       <origin
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdf/meshes/rod.STL" />
+          filename="package://model/meshes/rod.STL" />
       </geometry>
       <material
         name="">
@@ -80,12 +95,66 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdf/meshes/rod.STL" />
+          filename="package://model/meshes/rod.STL" />
       </geometry>
     </collision>
   </link>
+
   <joint
-    name="joint"
+    name="base_to_wheel_x" type="fixed">
+    <parent link="base_link"/>
+    <child link="wheel_base"/>
+    <axis xyz="1 0 0"/>
+    <origin xyz="0 0 0"/>
+    <limit
+      lower="-100"
+      upper="100"
+      effort="100"
+      velocity="100"/>
+  </joint>
+
+<!--   <joint
+    name="base_to_wheel_y" type="prismatic">
+    <parent link="base_link"/>
+    <child link="wheel_base"/>
+    <axis xyz="0 1 0"/>
+    <origin xyz="0 0 0"/>
+    <limit
+      lower="-100"
+      upper="100"
+      effort="100"
+      velocity="100"/>
+  </joint>
+
+  <joint
+    name="base_to_wheel_rotation"
+    type="continuous">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="wheel_base" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+ -->
+  <!-- <joint
+    name="wheel_to_rod"
+    type="continuous">
+    <origin
+      xyz="0 0.03 0.055"
+      rpy="0.45 0 0" />
+    <parent
+      link="wheel_base" />
+    <child
+      link="rod" />
+    <axis
+      xyz="1 0 0" />
+  </joint> -->
+  <joint
+    name="wheel_to_rod"
     type="continuous">
     <origin
       xyz="0 0 0"

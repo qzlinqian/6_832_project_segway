@@ -159,3 +159,12 @@ if __name__ == '__main__':
 
     t = np.linspace(0, time_steps + 1, time_steps + 1) * time_interval
     visualizer.draw_states(state_opt, torque_opt, t)
+
+    world_dict = seg_world.__dict__
+
+    f = open('../model/data/world0.txt', 'w')
+    f.write(str(world_dict))
+    f.close()
+
+    np.save('../model/data/state0.npy', state_opt)
+    np.save('../model/data/torque0.npu', torque_opt)
