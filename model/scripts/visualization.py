@@ -127,6 +127,7 @@ def publish_solutions(br, step_state):
 	# state.name = ['base_to_wheel_x', 'base_to_wheel_y', 'base_to_wheel_r', 'wheel_to_rod']
 	# state.position = [step_state[0], step_state[1], step_state[2], step_state[5]]
 	# pub.publish(state)
+	# There's an offset of the coordinates between the CAD model and the dynamic model I'm using
 	br.sendTransform((step_state[0], step_state[1], 0),
 		             tf.transformations.quaternion_from_euler(0, 0, step_state[2] + np.pi/2),
 		             rospy.Time.now(),
@@ -136,7 +137,7 @@ def publish_solutions(br, step_state):
 		             tf.transformations.quaternion_from_euler(step_state[5] + np.pi/2, 0, 0),
 		             rospy.Time.now(),
 		             'rod',
-		             'wheel_base')
+		             'wheel_base') 
 
 
 if __name__ == '__main__':
